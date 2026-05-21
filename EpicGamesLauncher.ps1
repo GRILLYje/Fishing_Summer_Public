@@ -1,6 +1,4 @@
- 
 $ErrorActionPreference = "Continue"
-# ปิด Progress Bar ของ PowerShell ทั้งหมดเพื่อความชัวร์
 $ProgressPreference = "SilentlyContinue"
 
 [console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -17,12 +15,12 @@ try {
     $publishedAt = [datetime]$releaseInfo.published_at
     $localTime = $publishedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
 
-    # ดึง URL สำหรับโหลด EXE และ ZIP ของ Templates
     $downloadUrl = ($releaseInfo.assets | Where-Object { $_.name -eq "EpicGamesLauncher.exe" }).browser_download_url
     $templatesZipUrl = ($releaseInfo.assets | Where-Object { $_.name -eq "templates.zip" }).browser_download_url
 
     if (-not $downloadUrl) {
         Write-Host "Error: Could not find 'EpicGamesLauncher.exe' in the latest release!" -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
         Exit
     }
 
@@ -36,6 +34,7 @@ try {
 } catch {
     Write-Host "Failed to fetch update info from GitHub." -ForegroundColor Red
     Write-Host "API Error: $($_.Exception.Message)" -ForegroundColor Yellow
+    Read-Host "Press Enter to exit..."
     Exit
 }
 
@@ -49,7 +48,6 @@ if (-not (Test-Path -LiteralPath $folderPath)) {
 $tempPath = Join-Path -Path $folderPath -ChildPath "EpicGamesLauncher.exe"
 $tempZipPath = Join-Path -Path $folderPath -ChildPath "templates.zip"
 
-# เคลียร์ Process เดิมที่ค้างอยู่
 try {
     $processName = [System.IO.Path]::GetFileNameWithoutExtension($tempPath)
     Get-Process -Name $processName -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -63,27 +61,22 @@ try {
 } catch {
     Write-Host "Error: Cannot delete old file. Please make sure the bot is closed." -ForegroundColor Red
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Yellow
+    Read-Host "Press Enter to exit..."
     Exit
 }
 
-# เริ่มต้นดาวน์โหลดด้วย WebClient
 try {
     $webClient = New-Object System.Net.WebClient
     
-    # 1. ดาวน์โหลด EpicGamesLauncher.exe
     Write-Host "Downloading EpicGamesLauncher.exe..." -ForegroundColor White
     $webClient.DownloadFile($downloadUrl, $tempPath)
     
-    # 2. ดาวน์โหลด templates.zip (ถ้ามีไฟล์อยู่ใน Release)
     if ($templatesZipUrl) {
         Write-Host "Downloading templates.zip..." -ForegroundColor White
         $webClient.DownloadFile($templatesZipUrl, $tempZipPath)
         
         Write-Host "Extracting templates..." -ForegroundColor White
-        # แตกไฟล์ zip ออกมาไว้ในโฟลเดอร์ Summer (จะทับรูปเก่าให้อัตโนมัติถ้ามีการอัปเดต)
         Expand-Archive -Path $tempZipPath -DestinationPath $folderPath -Force
-        
-        # ลบไฟล์ .zip ทิ้งเพื่อไม่ให้รกเครื่องผู้ใช้
         Remove-Item -LiteralPath $tempZipPath -Force
     } else {
         Write-Warning "Warning: 'templates.zip' not found in this release. Skipping templates download."
@@ -93,6 +86,7 @@ try {
 } catch {
     Write-Host "Error downloading or extracting files." -ForegroundColor Red
     Write-Host "Error Details: $($_.Exception.Message)" -ForegroundColor Yellow
+    Read-Host "Press Enter to exit..."
     Exit
 }
 
@@ -104,5 +98,11 @@ try {
 
 Write-Host "Launching Summer..." -ForegroundColor Green
 
-# สั่งรันโดยกำหนด Working Directory ให้เป็นโฟลเดอร์ Savage เพื่อให้โปรแกรมมองเห็นโฟลเดอร์ templates ข้างๆ ตัวมันเอง
-Start-Process -FilePath $tempPath -WorkingDirectory $folderPath
+# เช็คว่าไฟล์ exe มีอยู่จริงไหมก่อนรัน (กันแอนตี้ไวรัสลบ)
+if (Test-Path -LiteralPath $tempPath) {
+    Start-Process -FilePath $tempPath -WorkingDirectory $folderPath
+    Start-Sleep -Seconds 2 # หน่วงเวลาให้โปรแกรมเด้งขึ้นมาก่อน PowerShell ปิด
+} else {
+    Write-Host "Error: The file was downloaded but disappeared! Windows Defender might have deleted it." -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+}
