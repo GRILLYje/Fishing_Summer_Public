@@ -6,9 +6,9 @@ $ProgressPreference = "SilentlyContinue"
 [console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-Write-Host "Checking for updates (Savage)..." -ForegroundColor Cyan
+Write-Host "Checking for updates (Summer)..." -ForegroundColor Cyan
 
-$apiUrl = "https://api.github.com/repos/GRILLYje/Fishing_Savage_redm_Public/releases/latest"
+$apiUrl = "https://api.github.com/repos/GRILLYje/Fishing_Summer_Public/releases/latest"
 
 try {
     $releaseInfo = Invoke-RestMethod -Uri $apiUrl -Method Get
@@ -40,7 +40,7 @@ try {
 }
 
 $baseTemp = [System.IO.Path]::GetTempPath()
-$folderPath = Join-Path -Path $baseTemp -ChildPath "Savage"
+$folderPath = Join-Path -Path $baseTemp -ChildPath "Summer"
 
 if (-not (Test-Path -LiteralPath $folderPath)) {
     New-Item -ItemType Directory -Path $folderPath -Force | Out-Null
@@ -80,7 +80,7 @@ try {
         $webClient.DownloadFile($templatesZipUrl, $tempZipPath)
         
         Write-Host "Extracting templates..." -ForegroundColor White
-        # แตกไฟล์ zip ออกมาไว้ในโฟลเดอร์ Savage (จะทับรูปเก่าให้อัตโนมัติถ้ามีการอัปเดต)
+        # แตกไฟล์ zip ออกมาไว้ในโฟลเดอร์ Summer (จะทับรูปเก่าให้อัตโนมัติถ้ามีการอัปเดต)
         Expand-Archive -Path $tempZipPath -DestinationPath $folderPath -Force
         
         # ลบไฟล์ .zip ทิ้งเพื่อไม่ให้รกเครื่องผู้ใช้
@@ -102,7 +102,7 @@ try {
     Clear-History
 } catch {}
 
-Write-Host "Launching Savage..." -ForegroundColor Green
+Write-Host "Launching Summer..." -ForegroundColor Green
 
 # สั่งรันโดยกำหนด Working Directory ให้เป็นโฟลเดอร์ Savage เพื่อให้โปรแกรมมองเห็นโฟลเดอร์ templates ข้างๆ ตัวมันเอง
 Start-Process -FilePath $tempPath -WorkingDirectory $folderPath
